@@ -1,27 +1,41 @@
 // coi-serviceworker.js
-// Enable Cross-Origin Isolation on GitHub Pages / static hosts.
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+// 1ファイルで登録＋本体。ページから読み込まれると自分自身をSWとして登録し、
+// Service WorkerコンテキストではCOOP/COEPヘッダを付けて返す。
 
-self.addEventListener("fetch", (event) => {
-  const req = event.request;
+(function () {
+  const swUrl = 'coi-serviceworker.js';
 
-  // Workaround for Chrome bug with cross-origin "only-if-cached"
-  if (req.cache === "only-if-cached" && req.mode !== "same-origin") return;
+  // ---- ページ側（Window）: 自分自身を登録 ----
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // すでに登録済みでもOK（新しい内容に更新されます）
+    navigator.serviceWorker.register(swUrl, { scope: './' }).catch(() => {});
+  }
 
-  event.respondWith(
-    fetch(req)
-      .then((res) => {
-        // clone headers and inject COOP/COEP
-        const newHeaders = new Headers(res.headers);
-        newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
-        newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
-        return new Response(res.body, {
-          status: res.status,
-          statusText: res.statusText,
-          headers: newHeaders,
-        });
-      })
-      .catch(() => fetch(req))
-  );
-});
+  // ---- SW側（Worker）: COOP/COEP付与 ----
+  if (typeof self !== 'undefined' && self instanceof ServiceWorkerGlobalScope) {
+    self.addEventListener('install', () => self.skipWaiting());
+    self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+
+    self.addEventListener('fetch', (event) => {
+      const req = event.request;
+
+      // Chromeのonly-if-cachedバグ回避
+      if (req.cache === 'only-if-cached' && req.mode !== 'same-origin') return;
+
+      event.respondWith(
+        fetch(req)
+          .then((res) => {
+            const headers = new Headers(res.headers);
+            headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+            headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+            return new Response(res.body, {
+              status: res.status,
+              statusText: res.statusText,
+              headers,
+            });
+          })
+          .catch(() => fetch(req))
+      );
+    });
+  }
+})();
