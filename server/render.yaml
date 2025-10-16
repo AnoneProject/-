@@ -1,0 +1,25 @@
+services:
+  - type: web
+	name: anone-api
+	env: python
+	region: singapore   # ←日本から最短（お好みで）
+	plan: free         # ←有料でもOK
+	buildCommand: "pip install -r requirements.txt"
+	startCommand: "gunicorn -w 2 -b 0.0.0.0:$PORT app:app"
+	envVars:
+	  - key: AUTH_TOKEN
+		sync: false     # Render のダッシュボードで中身を設定
+	  - key: ALLOW_ORIGINS
+		value: "https://anoneproject.github.io,http://localhost:3000"
+	  - key: DATA_DIR
+		value: "/var/data"
+	  - key: UPLOAD_DIR
+		value: "/var/data/uploads"
+	  - key: MAX_CONTENT_LENGTH_MB
+		value: "5"
+	  - key: FORCE_HTTPS
+		value: "1"
+	disk:
+	  name: data
+	  mountPath: /var/data
+	  sizeGB: 1
