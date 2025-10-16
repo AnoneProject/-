@@ -79,12 +79,9 @@ def receive():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
-# ローカル実行用（Render本番はgunicornで起動）
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
-    @app.route("/healthz")
-def healthz():
-    return "OK", 200
-@app.route("/healthz")
-def healthz():
-    return "OK", 200
+    # ローカル実行用（Render本番はgunicornで起動）
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=PORT)
+        @app.route("/healthz")
+    def healthz():
+        return "OK", 200
